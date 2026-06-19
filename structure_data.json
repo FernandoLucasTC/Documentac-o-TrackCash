@@ -1,0 +1,254 @@
+{
+  "Ponto B": {
+    "channels": {
+      "Mercado Livre": {
+        "priority": "alta",
+        "sections": {
+          "Suporte Track": [
+            "API Pedido",
+            "API Repasse",
+            "Integracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Omie": {
+        "priority": "alta",
+        "sections": {
+          "Suporte Track": [
+            "Configuracao",
+            "Integracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Configuracao",
+            "Integracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Shopee": {
+        "priority": "alta",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Magazine Luiza": {
+        "priority": "alta",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio",
+            "Subir repasse"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Subir repasse",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Amazon": {
+        "priority": "media",
+        "sections": {
+          "Suporte Track": [
+            "Configuracao",
+            "Regras de negocio",
+            "Subir pedidos",
+            "Subir repasse"
+          ],
+          "Cliente": [
+            "Subir pedidos",
+            "Subir repasse",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Via Varejo": {
+        "priority": "media",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Subir repasse",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Subir repasse",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Leroy Merlin": {
+        "priority": "media",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio",
+            "Validacao"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Carrefour": {
+        "priority": "media",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio",
+            "Validacao"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Madeira": {
+        "priority": "baixa",
+        "sections": {
+          "Suporte Track": [
+            "Subir pedidos",
+            "Subir repasse",
+            "Configuracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Subir pedidos",
+            "Subir repasse",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": []
+        }
+      },
+      "Netshoes": {
+        "priority": "baixa",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "Tiktok": {
+        "priority": "baixa",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      },
+      "B2W": {
+        "priority": "baixa",
+        "sections": {
+          "Suporte Track": [
+            "Integracao",
+            "Configuracao",
+            "Validacao",
+            "Regras de negocio"
+          ],
+          "Cliente": [
+            "Integracao",
+            "Configuracao",
+            "Regras de negocio"
+          ],
+          "Video": [
+            "Local para postar os videos apenas"
+          ]
+        }
+      }
+    }
+  },
+  "Ponto A": {
+    "channels": {}
+  },
+  "Meios de Pagamento": {
+    "channels": {
+      "Cielo": {
+        "priority": "alta",
+        "sections": {
+          "Suporte Track": [
+            "Configuração"
+          ],
+          "Cliente": [],
+          "Video": []
+        }
+      }
+    }
+  }
+}

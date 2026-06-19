@@ -1,0 +1,56 @@
+{
+  "Ponto B": {
+    "Mercado Livre": [
+      "API Pedido",
+      "API Repasse",
+      "Integração",
+      "Validação"
+    ],
+    "Shopee": [
+      "Integração",
+      "Configuração",
+      "Regras de negócio"
+    ],
+    "Magazine Luiza": [
+      "Integração",
+      "Configuração",
+      "Subir repasse"
+    ],
+    "Amazon": [
+      "Configuração",
+      "Regras de negócio",
+      "Subir pedidos"
+    ]
+  },
+  "Ponto A": {
+    "Via Varejo": [
+      "Integração",
+      "Configuração",
+      "Subir repasse"
+    ],
+    "Leroy Merlin": [
+      "Integração",
+      "Configuração",
+      "Validação"
+    ],
+    "Carrefour": [
+      "Integração",
+      "Configuração",
+      "Validação"
+    ]
+  },
+  "Meios de Pagamento": {
+    "Mercado Pago": [
+      "Configuração",
+      "Integração",
+      "Validação"
+    ],
+    "PayPal": [
+      "Integração",
+      "Testes"
+    ],
+    "Cielo": [
+      "Configuração"
+    ]
+  }
+}
