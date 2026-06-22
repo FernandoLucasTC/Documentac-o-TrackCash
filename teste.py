@@ -3,9 +3,6 @@ import json
 import os
 from datetime import datetime
 
-SAVE_FILE = "progress_data.json"
-STRUCTURE_FILE = "structure_data.json"
-
 st.set_page_config(
     page_title="Documentação · Canais Marketplace",
     layout="wide",
@@ -82,42 +79,88 @@ st.markdown("""
     hr { border:none; border-top:1px solid var(--border) !important; margin:32px 0 !important; }
     [data-testid="stDownloadButton"] > button { background:var(--surface) !important; border:1px solid var(--border) !important; color:#c8c8e8 !important; font-size:13px !important; border-radius:8px !important; }
     [data-testid="stDownloadButton"] > button:hover { border-color:var(--green) !important; color:var(--green) !important; }
+
+    /* Remove linha vazia abaixo dos botões de canal */
+    [data-testid="stHorizontalBlock"] { gap: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Persistência ─────────────────────────────────────────────────────────────
+# ─── Conexão Supabase ─────────────────────────────────────────────────────────
+
+@st.cache_resource
+def get_supabase():
+    try:
+        from supabase import create_client
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        return create_client(url, key)
+    except Exception as e:
+        st.error(f"Erro ao conectar ao Supabase: {e}")
+        return None
+
+supabase = get_supabase()
+
+# ─── Persistência via Supabase ────────────────────────────────────────────────
 
 def load_progress():
-    if os.path.exists(SAVE_FILE):
-        try:
-            with open(SAVE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
-
-def save_progress(data):
+    if supabase is None:
+        return {}
     try:
-        with open(SAVE_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        res = supabase.table("checklist").select("*").execute()
+        progress = {}
+        for row in res.data:
+            k = f"{row['categoria']}|{row['canal']}|{row['secao']}|{row['item']}"
+            progress[k] = row["concluido"]
+        return progress
     except Exception as e:
-        st.warning(f"Nao foi possivel salvar: {e}")
+        st.warning(f"Erro ao carregar progresso: {e}")
+        return {}
+
+def save_check(cat, channel, section, item, value):
+    if supabase is None:
+        return
+    try:
+        supabase.table("checklist").upsert({
+            "categoria": cat,
+            "canal": channel,
+            "secao": section,
+            "item": item,
+            "concluido": value,
+            "updated_at": datetime.now().isoformat()
+        }, on_conflict="categoria,canal,secao,item").execute()
+    except Exception as e:
+        st.warning(f"Erro ao salvar: {e}")
+
+def clear_progress_db():
+    if supabase is None:
+        return
+    try:
+        supabase.table("checklist").delete().neq("id", 0).execute()
+    except Exception as e:
+        st.warning(f"Erro ao limpar progresso: {e}")
 
 def load_structure():
-    if os.path.exists(STRUCTURE_FILE):
-        try:
-            with open(STRUCTURE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return None
-    return None
+    if supabase is None:
+        return None
+    try:
+        res = supabase.table("estrutura").select("*").eq("id", 1).execute()
+        if res.data:
+            return json.loads(res.data[0]["data"])
+        return None
+    except Exception:
+        return None
 
 def save_structure(data):
+    if supabase is None:
+        return
     try:
-        with open(STRUCTURE_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        supabase.table("estrutura").upsert({
+            "id": 1,
+            "data": json.dumps(data, ensure_ascii=False),
+            "updated_at": datetime.now().isoformat()
+        }, on_conflict="id").execute()
     except Exception as e:
-        st.warning(f"Nao foi possivel salvar estrutura: {e}")
+        st.warning(f"Erro ao salvar estrutura: {e}")
 
 # ─── Estrutura padrão ─────────────────────────────────────────────────────────
 
@@ -172,7 +215,7 @@ def is_done(cat, channel, section, item):
 def set_done(cat, channel, section, item, value):
     k = item_key(cat, channel, section, item)
     st.session_state.progress[k] = value
-    save_progress(st.session_state.progress)
+    save_check(cat, channel, section, item, value)
 
 def count_channel(cat, ch_name):
     ch_data = st.session_state.structure[cat]["channels"].get(ch_name, {})
@@ -349,81 +392,82 @@ for ch_name, ch_data in sorted_channels:
 
     # Painel expandido
     if st.session_state.expanded_channel.get(exp_key, False):
-        st.markdown("<div class='expanded-card'>", unsafe_allow_html=True)
-        sections = ch_data.get("sections", {})
+        with st.container():
+            st.markdown("<div class='expanded-card'>", unsafe_allow_html=True)
+            sections = ch_data.get("sections", {})
 
-        for sec_name, items in sections.items():
-            st.markdown(f'<div class="section-title">{sec_name}</div>', unsafe_allow_html=True)
+            for sec_name, items in sections.items():
+                st.markdown(f'<div class="section-title">{sec_name}</div>', unsafe_allow_html=True)
 
-            if not items:
-                st.markdown("<div style='font-size:12px;color:#6868a0;padding:4px 0 8px'>Nenhum item ainda. Adicione abaixo.</div>", unsafe_allow_html=True)
+                if not items:
+                    st.markdown("<div style='font-size:12px;color:#6868a0;padding:4px 0 8px'>Nenhum item ainda. Adicione abaixo.</div>", unsafe_allow_html=True)
 
-            for item in items:
-                current_val = is_done(active_cat, ch_name, sec_name, item)
-                wk = f"cb__{active_cat}__{ch_name}__{sec_name}__{item}"
-                if wk not in st.session_state:
-                    st.session_state[wk] = current_val
-                new_val = st.checkbox(item, key=wk)
-                if new_val != current_val:
-                    set_done(active_cat, ch_name, sec_name, item, new_val)
-                    st.rerun()
+                for item in items:
+                    current_val = is_done(active_cat, ch_name, sec_name, item)
+                    wk = f"cb__{active_cat}__{ch_name}__{sec_name}__{item}"
+                    if wk not in st.session_state:
+                        st.session_state[wk] = current_val
+                    new_val = st.checkbox(item, key=wk)
+                    if new_val != current_val:
+                        set_done(active_cat, ch_name, sec_name, item, new_val)
+                        st.rerun()
 
-            # Adicionar item ao checklist
-            ai_col1, ai_col2 = st.columns([4, 1], gap="small")
-            with ai_col1:
-                ni = st.text_input("", key=f"ni_{active_cat}_{ch_name}_{sec_name}", placeholder=f"Novo item em '{sec_name}'...", label_visibility="collapsed")
-            with ai_col2:
-                if st.button("+ Add", key=f"additem_{active_cat}_{ch_name}_{sec_name}", use_container_width=True):
-                    if ni.strip():
-                        if ni.strip() not in st.session_state.structure[active_cat]["channels"][ch_name]["sections"][sec_name]:
-                            st.session_state.structure[active_cat]["channels"][ch_name]["sections"][sec_name].append(ni.strip())
+                # Adicionar item ao checklist
+                ai_col1, ai_col2 = st.columns([4, 1], gap="small")
+                with ai_col1:
+                    ni = st.text_input("", key=f"ni_{active_cat}_{ch_name}_{sec_name}", placeholder=f"Novo item em '{sec_name}'...", label_visibility="collapsed")
+                with ai_col2:
+                    if st.button("+ Add", key=f"additem_{active_cat}_{ch_name}_{sec_name}", use_container_width=True):
+                        if ni.strip():
+                            if ni.strip() not in st.session_state.structure[active_cat]["channels"][ch_name]["sections"][sec_name]:
+                                st.session_state.structure[active_cat]["channels"][ch_name]["sections"][sec_name].append(ni.strip())
+                                persist_structure()
+                                st.rerun()
+                            else:
+                                st.warning("Item ja existe nessa secao.")
+                        else:
+                            st.warning("Digite o nome do item.")
+
+            # Adicionar nova secao
+            st.markdown("<hr style='margin:16px 0 12px!important'>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size:11px;color:#6868a0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px'>Adicionar nova secao</div>", unsafe_allow_html=True)
+            ns1, ns2 = st.columns([4, 1], gap="small")
+            with ns1:
+                new_sec = st.text_input("", key=f"newsec_{active_cat}_{ch_name}", placeholder="Nome da nova secao...", label_visibility="collapsed")
+            with ns2:
+                if st.button("+ Secao", key=f"addsec_{active_cat}_{ch_name}", use_container_width=True):
+                    if new_sec.strip():
+                        if new_sec.strip() not in sections:
+                            st.session_state.structure[active_cat]["channels"][ch_name]["sections"][new_sec.strip()] = []
                             persist_structure()
                             st.rerun()
                         else:
-                            st.warning("Item ja existe nessa secao.")
+                            st.warning("Essa secao ja existe.")
                     else:
-                        st.warning("Digite o nome do item.")
+                        st.warning("Digite o nome da secao.")
 
-        # Adicionar nova secao
-        st.markdown("<hr style='margin:16px 0 12px!important'>", unsafe_allow_html=True)
-        st.markdown("<div style='font-size:11px;color:#6868a0;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px'>Adicionar nova secao</div>", unsafe_allow_html=True)
-        ns1, ns2 = st.columns([4, 1], gap="small")
-        with ns1:
-            new_sec = st.text_input("", key=f"newsec_{active_cat}_{ch_name}", placeholder="Nome da nova secao...", label_visibility="collapsed")
-        with ns2:
-            if st.button("+ Secao", key=f"addsec_{active_cat}_{ch_name}", use_container_width=True):
-                if new_sec.strip():
-                    if new_sec.strip() not in sections:
-                        st.session_state.structure[active_cat]["channels"][ch_name]["sections"][new_sec.strip()] = []
+            # Excluir canal
+            st.markdown("<hr style='margin:12px 0!important'>", unsafe_allow_html=True)
+            del_key = f"delconfirm_{active_cat}_{ch_name}"
+            if st.session_state.get(del_key):
+                st.markdown(f"<div style='font-size:13px;color:#ef4444;margin-bottom:8px'>Confirmar exclusao de <b>{ch_name}</b>? Esta acao e irreversivel.</div>", unsafe_allow_html=True)
+                dc1, dc2 = st.columns(2)
+                with dc1:
+                    if st.button("Sim, excluir", key=f"delyes_{active_cat}_{ch_name}", use_container_width=True):
+                        del st.session_state.structure[active_cat]["channels"][ch_name]
                         persist_structure()
+                        st.session_state.expanded_channel.pop(exp_key, None)
                         st.rerun()
-                    else:
-                        st.warning("Essa secao ja existe.")
-                else:
-                    st.warning("Digite o nome da secao.")
-
-        # Excluir canal
-        st.markdown("<hr style='margin:12px 0!important'>", unsafe_allow_html=True)
-        del_key = f"delconfirm_{active_cat}_{ch_name}"
-        if st.session_state.get(del_key):
-            st.markdown(f"<div style='font-size:13px;color:#ef4444;margin-bottom:8px'>Confirmar exclusao de <b>{ch_name}</b>? Esta acao e irreversivel.</div>", unsafe_allow_html=True)
-            dc1, dc2 = st.columns(2)
-            with dc1:
-                if st.button("Sim, excluir", key=f"delyes_{active_cat}_{ch_name}", use_container_width=True):
-                    del st.session_state.structure[active_cat]["channels"][ch_name]
-                    persist_structure()
-                    st.session_state.expanded_channel.pop(exp_key, None)
+                with dc2:
+                    if st.button("Cancelar", key=f"delno_{active_cat}_{ch_name}", use_container_width=True):
+                        st.session_state[del_key] = False
+                        st.rerun()
+            else:
+                if st.button(f"Excluir canal '{ch_name}'", key=f"delch_{active_cat}_{ch_name}", use_container_width=True):
+                    st.session_state[del_key] = True
                     st.rerun()
-            with dc2:
-                if st.button("Cancelar", key=f"delno_{active_cat}_{ch_name}", use_container_width=True):
-                    st.session_state[del_key] = False
-                    st.rerun()
-        else:
-            if st.button(f"Excluir canal '{ch_name}'", key=f"delch_{active_cat}_{ch_name}", use_container_width=True):
-                st.session_state[del_key] = True
-                st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ─── Footer ───────────────────────────────────────────────────────────────────
 
@@ -450,8 +494,8 @@ with f1:
 with f2:
     if st.button("Limpar progresso (checkboxes)", use_container_width=True, key="clrprog"):
         if st.session_state.get("confirm_clrprog"):
+            clear_progress_db()
             st.session_state.progress = {}
-            save_progress({})
             for k in list(st.session_state.keys()):
                 if k.startswith("cb__"):
                     del st.session_state[k]
@@ -464,10 +508,10 @@ with f2:
 with f3:
     if st.button("Reset completo (canais + progresso)", use_container_width=True, key="clrall"):
         if st.session_state.get("confirm_clrall"):
+            clear_progress_db()
             st.session_state.progress = {}
             st.session_state.structure = DEFAULT_STRUCTURE
-            save_progress({})
-            save_structure(DEFAULT_STRUCTURE)
+            persist_structure()
             for k in list(st.session_state.keys()):
                 if k.startswith("cb__"):
                     del st.session_state[k]
